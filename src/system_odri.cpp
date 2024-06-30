@@ -56,6 +56,10 @@ return_type SystemOdriHardware::read_default_cmd_state_value(
   }
   std::string str_des_start_pos = info_.hardware_parameters[default_joint_cs];
 
+  RCLCPP_INFO_STREAM(
+      rclcpp::get_logger("SystemOdriHardware"),
+      " Current value of str_des_start_pos:" << str_des_start_pos.c_str());
+
   typedef std::map<std::string, PosVelEffortGains> map_pveg;
   map_pveg hw_cs;
   if (default_joint_cs == "default_joint_cmd") {
@@ -72,15 +76,25 @@ return_type SystemOdriHardware::read_default_cmd_state_value(
   while (!iss_def_cmd_val.eof()) {
     // Find joint name.
     std::string joint_name;
+
     RCLCPP_INFO_STREAM(
         rclcpp::get_logger("SystemOdriHardware"),
         " Current value of iss_def_cmd_val:" << iss_def_cmd_val.str().c_str());
     iss_def_cmd_val >> joint_name;
 
+    // catch empty strings
+    if (joint_name.empty()) {
+      RCLCPP_WARN(
+          rclcpp::get_logger("SystemOdriHardware"),
+          " joint_name is empty");
+      continue;
+    }
+
     // Find the associate joint
     bool found_joint = false;
     for (const hardware_interface::ComponentInfo &joint : info_.joints) {
       if (joint.name == joint_name) {
+
         auto handle_dbl_and_msg = [](std::istringstream &iss_def_cmd_val,
                                      std::string &joint_name, double &adbl,
                                      std::string &msg) {
